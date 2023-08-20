@@ -1,43 +1,76 @@
 {
   "bin": {
-    "win32": "start_windows",
-    "linux": "bash start_linux",
-    "darwin": "bash start_macos.sh"
+    "win32": "",
+    "linux": "",
+    "darwin": ""
   },
-  "run": [{
-    "uri": "./index.js",
-    "method": "update_flags",
-    "params": {
-      "remove": "--notebook",
-      "add": "--chat"
-    }
-  }, {
-    "method": "shell.start",
-    "params": {
-      "path": "text-generation-webui"
-    }
-  },{
-    "method": "shell.enter",
-    "params": {
-      "message": "{{self.bin[os.platform()]}}",
-      "on": [{
-        "event": "/Running on local URL:.*(http[0-9:./]+)/i",
-        "return": "{{event.matches[0][1]}}"
-      }]
-    }
-  }, {
-    "method": "self.set",
-    "params": {
-      "session.json": {
-        "url": "{{input}}"
+  "run": [
+    {
+      "uri": "./setup.py",
+      "method": "execute_command",
+      "params": {
+        "command": "apt-get -y install -qq aria2"
       }
+    },
+    {
+      "uri": "./git.py",
+      "method": "clone",
+      "params": {
+        "path": "https://github.com/oobabooga/text-generation-webui"
+      }
+    },
+    {
+      "uri": "./pip.py",
+      "method": "install",
+      "params": {
+        "path": "-r requirements.txt"
+      }
+    },
+    {
+      "uri": "./pip.py",
+      "method": "install",
+      "params": {
+        "path": "-U gradio==3.28.3"
+      }
+    },
+    {
+      "uri": "./setup_additional.py",
+      "method": "mkdir_and_clone",
+      "params": {
+        "directory": "/content/text-generation-webui/repositories",
+        "git_url": "git clone -b cuda https://github.com/oobabooga/GPTQ-for-LLaMa.git"
+      }
+    },
+    {
+      "uri": "./download.py",
+      "method": "download_model",
+      "params": {
+        "base_url": "https://huggingface.co/4bit/pyg-13b-4bit-128g",
+        "download_directory": "/content/text-generation-webui/models/pyg-13b-4bit-128g"
+      }
+    },
+    {
+      "uri": "./extensions.py",
+      "method": "setup_extensions",
+      "params": {
+        "path": "/content/text-generation-webui/extensions/api"
+      }
+    },
+    {
+      "uri": "./server.py",
+      "method": "run_server",
+      "params": {
+        "command": "python server.py --share --chat --wbits 4 --groupsize 128 --model_type llama --api --public-api"
+      }
+    },
+    {
+      "method": "browser.open",
+      "params": {
+        "uri": "/?selected=Text Generation webui"
+      }
+    },
+    {
+      "method": "process.wait"
     }
-  }, {
-    "method": "browser.open",
-    "params": {
-      "uri": "/?selected=Text Generation webui"
-    }
-  }, {
-    "method": "process.wait"
-  }]
+  ]
 }
